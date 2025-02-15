@@ -15,6 +15,8 @@ def extract_metadata_and_data(file_path):
     activity_header_lines = []
     jump_header_lines = []
 
+    record_id = 0  # Unique identifier for each record
+
     with open(file_path, 'r') as file:
         for line in file:
             stripped_line = line.strip()
@@ -26,19 +28,30 @@ def extract_metadata_and_data(file_path):
             # Detect new metadata block
             if 'Activity Summary' in stripped_line:
                 if current_metadata:
+                    # Assign unique ID to metadata
+                    current_metadata["Record ID"] = record_id
                     all_metadata.append(current_metadata)
+
+                    # Process activity data
                     if activity_data_lines:
                         df_activity = parse_data_to_dataframe(activity_header_lines, activity_data_lines)
+                        df_activity["Record ID"] = record_id  # Assign same unique ID
                         activity_dataframes.append(df_activity)
                         activity_data_lines = []
                         activity_header_lines = []
+
+                    # Process jump data
                     if jump_data_lines:
                         df_jump = parse_data_to_dataframe(jump_header_lines, jump_data_lines)
+                        df_jump["Record ID"] = record_id  # Assign same unique ID
                         jump_dataframes.append(df_jump)
                         jump_data_lines = []
                         jump_header_lines = []
+
+                    # Increment unique record ID for the next dataset block
+                    record_id += 1
                     current_metadata = {}
-                
+
                 inside_metadata = True
                 inside_activity_data = False
                 inside_jump_data = False
@@ -86,12 +99,15 @@ def extract_metadata_and_data(file_path):
     
     # Save the last metadata and data blocks
     if current_metadata:
+        current_metadata["Record ID"] = record_id
         all_metadata.append(current_metadata)
     if activity_data_lines:
         df_activity = parse_data_to_dataframe(activity_header_lines, activity_data_lines)
+        df_activity["Record ID"] = record_id  # Assign ID to activity data
         activity_dataframes.append(df_activity)
     if jump_data_lines:
         df_jump = parse_data_to_dataframe(jump_header_lines, jump_data_lines)
+        df_jump["Record ID"] = record_id  # Assign ID to jump data
         jump_dataframes.append(df_jump)
     
     return all_metadata, activity_dataframes, jump_dataframes
@@ -133,7 +149,7 @@ file_path = 'sample.txt'
 # Extract metadata and data
 metadata_blocks, activity_dataframes, jump_dataframes = extract_metadata_and_data(file_path)
 
-# print_summary(metadata_blocks, activity_dataframes, jump_dataframes)
+print_summary(metadata_blocks, activity_dataframes, jump_dataframes)
 
 
 
@@ -169,4 +185,4 @@ def delta_time_distance(dataframes, interval):
     final_df.to_csv("output.csv", index=False)  # Save to CSV
 
 
-delta_time_distance(activity_dataframes, 5)
+# delta_time_distance(activity_dataframes, 5)
