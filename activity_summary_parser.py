@@ -151,22 +151,32 @@ def print_summary(metadata, activity_df, jump_df):
 # y axis = date
 def delta_time_distance(dataframes, interval, metadata):
     grouped_dataframes = []
-    
+
+    # unique id for this summary
+    summary_id = ""
+
     for i, df in enumerate(dataframes):
         if isinstance(df, pd.DataFrame):
-            # Extract the date (ensure it's unique per dataset)
-            date = metadata[i].get("Start Date", f"Dataset_{i}")  # Assign a unique fallback if missing
-            
+            if not summary_id:
+                # Extract summary id
+                subject_id = metadata[i].get("Subject ID", f"Subject_{i}")
+                group_id = metadata[i].get("Group ID", f"Group_{i}")
+                experiment_id = metadata[i].get("Experiment ID", f"Experiment_{i}")
+                summary_id = f"{subject_id}_{group_id}_{experiment_id}"
+
+            # Extract metadata date fields
+            date = metadata[i].get("Start Date", f"Dataset_{i}")  # Use date as column name
+
             # Convert distance column to numeric
             df["Dist. Trav."] = pd.to_numeric(df["Dist. Trav."], errors='coerce')
-            
-            # Calculate movement difference
+
+            # Calculate movement difference (delta)
             df["Dist. Trav. Delta"] = df["Dist. Trav."].diff().round(4).fillna(df["Dist. Trav."])
-            
+
             # Create groups based on interval
             df["Group"] = df.index // interval  
 
-            # Sum in groups of the interval
+            # Sum "Dist. Trav. Delta" in groups of interval
             df_grouped = df.groupby("Group")["Dist. Trav. Delta"].sum().round(4).reset_index()
 
             # Rename "Dist. Trav. Delta" to the date
@@ -186,8 +196,9 @@ def delta_time_distance(dataframes, interval, metadata):
     # Reset index after merging
     final_df = final_df.reset_index()
 
-    # Save to CSV
-    final_df.to_csv("output.csv", index=False)
+    output_filename = f"{summary_id}.csv"
+    # Save to CSV including metadata
+    final_df.to_csv(output_filename, index=False)
 
     print("CSV file saved successfully!")
     return final_df  # Return the final DataFrame
