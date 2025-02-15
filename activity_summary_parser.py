@@ -133,4 +133,40 @@ file_path = 'sample.txt'
 # Extract metadata and data
 metadata_blocks, activity_dataframes, jump_dataframes = extract_metadata_and_data(file_path)
 
-print_summary(metadata_blocks, activity_dataframes, jump_dataframes)
+# print_summary(metadata_blocks, activity_dataframes, jump_dataframes)
+
+
+
+## Target output is a table for is x, y 
+# 1 file = 1 mouse
+# x axis = n days bin
+# y axis = date
+
+
+def delta_time_distance(dataframes, interval):
+
+    grouped_dataframes = [];
+    for df in dataframes:
+        # Ensure df is a DataFrame before processing
+        if isinstance(df, pd.DataFrame):
+            # df = df[["Dist. Trav.", "Session Time"]]
+            df["Dist. Trav."] = pd.to_numeric(df["Dist. Trav."], errors='coerce')
+            df["Dist. Trav. Delta"] = df["Dist. Trav."].diff().round(4).fillna(df["Dist. Trav."])
+            df["Group"] = df.index // 5  # Groups of 5
+
+            # Sum in groups of 5
+            df_grouped = df.groupby("Group")["Dist. Trav. Delta"].sum().round(4).reset_index()
+
+            # Rename for clarity
+            df_grouped.columns = ["Group", "Dist. Trav. Delta"]
+
+            grouped_dataframes.append(df_grouped)
+            
+        else:
+            print("Item is not a DataFrame:", type(df))
+        
+    final_df = pd.concat(grouped_dataframes, ignore_index=True)  # Stacks them vertically
+    final_df.to_csv("output.csv", index=False)  # Save to CSV
+
+
+delta_time_distance(activity_dataframes, 5)
