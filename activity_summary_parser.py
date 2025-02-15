@@ -18,6 +18,10 @@ def extract_metadata_and_data(file_path):
     with open(file_path, 'r') as file:
         for line in file:
             stripped_line = line.strip()
+
+            # Skip empty lines
+            if not stripped_line:
+                continue
             
             # Detect new metadata block
             if 'Activity Summary' in stripped_line:
