@@ -151,9 +151,7 @@ def print_summary(metadata, activity_df, jump_df):
 # y axis = date
 def delta_time_distance(dataframes, interval, metadata):
     grouped_dataframes = []
-
-    # unique id for this summary
-    summary_id = ""
+    summary_id = ""  # unique id for this summary
 
     for i, df in enumerate(dataframes):
         if isinstance(df, pd.DataFrame):
@@ -200,14 +198,13 @@ def delta_time_distance(dataframes, interval, metadata):
     # Save to CSV including metadata
     final_df.to_csv(output_filename, index=False)
 
-    print("CSV file saved successfully!")
-    return final_df  # Return the final DataFrame
+    print(f"CSV file saved successfully with name {summary_id}!")
+    return final_df, summary_id  # Return the final DataFrame
 
 
-def plot_delta_time_distance(dataframe, interval):
+def plot_delta_time_distance(dataframe, interval, summary_id):
     # Select all columns except "Group" for plotting (since they are dates)
     date_columns = [col for col in dataframe.columns if col != "Group"]
-    print("Columns selected for plotting:", date_columns)
 
     # Ensure there are valid columns to plot
     if date_columns:
@@ -216,7 +213,7 @@ def plot_delta_time_distance(dataframe, interval):
         # Customize plot
         plt.xlabel(f"Group (in {INTERVAL}-minute Time Intervals)")
         plt.ylabel("Distance Traveled")
-        plt.title("Distance Traveled Over Time")
+        plt.title(f"Distance Traveled Over Time for {summary_id}")
         plt.legend(title="Date")
         plt.grid()
 
@@ -235,5 +232,5 @@ metadata_blocks, activity_dataframes, jump_dataframes = extract_metadata_and_dat
 
 # Constants
 INTERVAL = 5
-grouped_df = delta_time_distance(activity_dataframes, INTERVAL, metadata_blocks)
-plt = plot_delta_time_distance(grouped_df, INTERVAL)
+grouped_df, SUMMARY_ID = delta_time_distance(activity_dataframes, INTERVAL, metadata_blocks)
+plt = plot_delta_time_distance(grouped_df, INTERVAL, SUMMARY_ID)
