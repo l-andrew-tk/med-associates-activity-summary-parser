@@ -149,7 +149,7 @@ file_path = 'sample.txt'
 # Extract metadata and data
 metadata_blocks, activity_dataframes, jump_dataframes = extract_metadata_and_data(file_path)
 
-print_summary(metadata_blocks, activity_dataframes, jump_dataframes)
+# print_summary(metadata_blocks, activity_dataframes, jump_dataframes)
 
 
 
@@ -157,32 +157,47 @@ print_summary(metadata_blocks, activity_dataframes, jump_dataframes)
 # 1 file = 1 mouse
 # x axis = n days bin
 # y axis = date
-
-
-def delta_time_distance(dataframes, interval):
-
-    grouped_dataframes = [];
-    for df in dataframes:
-        # Ensure df is a DataFrame before processing
+def delta_time_distance(dataframes, interval, metadata):
+    grouped_dataframes = []
+    
+    for i, df in enumerate(dataframes):
         if isinstance(df, pd.DataFrame):
-            # df = df[["Dist. Trav.", "Session Time"]]
+            # Extract the date (ensure it's unique per dataset)
+            date = metadata[i].get("Start Date", f"Dataset_{i}")  # Assign a unique fallback if missing
+            
+            # Convert distance column to numeric
             df["Dist. Trav."] = pd.to_numeric(df["Dist. Trav."], errors='coerce')
+            
+            # Calculate movement difference
             df["Dist. Trav. Delta"] = df["Dist. Trav."].diff().round(4).fillna(df["Dist. Trav."])
-            df["Group"] = df.index // 5  # Groups of 5
+            
+            # Create groups based on interval
+            df["Group"] = df.index // interval  
 
-            # Sum in groups of 5
+            # Sum in groups of the interval
             df_grouped = df.groupby("Group")["Dist. Trav. Delta"].sum().round(4).reset_index()
 
-            # Rename for clarity
-            df_grouped.columns = ["Group", "Dist. Trav. Delta"]
+            # Rename "Dist. Trav. Delta" to the date
+            df_grouped = df_grouped.rename(columns={"Dist. Trav. Delta": date})
 
+            # Append to list
             grouped_dataframes.append(df_grouped)
-            
+        
         else:
             print("Item is not a DataFrame:", type(df))
-        
-    final_df = pd.concat(grouped_dataframes, ignore_index=True)  # Stacks them vertically
-    final_df.to_csv("output.csv", index=False)  # Save to CSV
 
+    # Merge DataFrames using "Group" as the index
+    final_df = grouped_dataframes[0].set_index("Group")  # Start with first DataFrame
+    for df in grouped_dataframes[1:]:
+        final_df = final_df.join(df.set_index("Group"), how="outer")  # Join on "Group"
 
-# delta_time_distance(activity_dataframes, 5)
+    # Reset index after merging
+    final_df = final_df.reset_index()
+
+    # Save to CSV
+    final_df.to_csv("output.csv", index=False)
+
+    print("CSV file saved successfully!")
+    return final_df  # Return the final DataFrame
+
+delta_time_distance(activity_dataframes, 5, metadata_blocks)
