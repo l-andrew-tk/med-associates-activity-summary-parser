@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 
 def extract_metadata_and_data(file_path):
     all_metadata = []
@@ -143,15 +144,6 @@ def print_summary(metadata, activity_df, jump_df):
         
         print("\n" + "="*40 + "\n")
 
-# Path to your file
-file_path = 'sample.txt'
-
-# Extract metadata and data
-metadata_blocks, activity_dataframes, jump_dataframes = extract_metadata_and_data(file_path)
-
-# print_summary(metadata_blocks, activity_dataframes, jump_dataframes)
-
-
 
 ## Target output is a table for is x, y 
 # 1 file = 1 mouse
@@ -200,4 +192,37 @@ def delta_time_distance(dataframes, interval, metadata):
     print("CSV file saved successfully!")
     return final_df  # Return the final DataFrame
 
-delta_time_distance(activity_dataframes, 5, metadata_blocks)
+
+def plot_delta_time_distance(dataframe, interval):
+    # Select all columns except "Group" for plotting (since they are dates)
+    date_columns = [col for col in dataframe.columns if col != "Group"]
+    print("Columns selected for plotting:", date_columns)
+
+    # Ensure there are valid columns to plot
+    if date_columns:
+        dataframe.plot(x="Group", y=date_columns, marker="o")
+
+        # Customize plot
+        plt.xlabel(f"Group (in {INTERVAL}-minute Time Intervals)")
+        plt.ylabel("Distance Traveled")
+        plt.title("Distance Traveled Over Time")
+        plt.legend(title="Date")
+        plt.grid()
+
+        # Show plot
+        plt.show()
+    else:
+        print("No valid columns found for plotting!")
+
+
+
+# Path to your file
+file_path = 'sample.txt'
+
+# parse input text file
+metadata_blocks, activity_dataframes, jump_dataframes = extract_metadata_and_data(file_path)
+
+# Constants
+INTERVAL = 5
+grouped_df = delta_time_distance(activity_dataframes, INTERVAL, metadata_blocks)
+plt = plot_delta_time_distance(grouped_df, INTERVAL)
