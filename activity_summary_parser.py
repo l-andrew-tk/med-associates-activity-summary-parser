@@ -1,5 +1,25 @@
+import sys
 import pandas as pd
 import matplotlib.pyplot as plt
+import tkinter as tk
+from tkinter import filedialog
+
+def open_file_picker():
+    # Initialize a hidden Tkinter root window
+    root = tk.Tk()
+    root.withdraw()  # Hide the root window
+
+    # Open file picker dialog
+    file_path = filedialog.askopenfilename(title="Select a File",
+                                           filetypes=[("Summary Files", "*.Summary"), 
+                                                      ("TXT Files", "*.txt")])
+    
+    if file_path:
+        print(f"Selected file: {file_path}")
+    else:
+        print("No file selected.")
+
+    return file_path  # Return the selected file path
 
 def extract_metadata_and_data(file_path):
     all_metadata = []
@@ -128,7 +148,6 @@ def parse_data_to_dataframe(header_lines, data_lines):
     df = pd.DataFrame(data_rows, columns=combined_headers)
     return df
     
-
 def print_summary(metadata, activity_df, jump_df):
     # Displaying results
     for i, (metadata, activity_df, jump_df) in enumerate(zip(metadata_blocks, activity_dataframes, jump_dataframes), 1):
@@ -201,7 +220,6 @@ def delta_time_distance(dataframes, interval, metadata):
     print(f"CSV file saved successfully with name {summary_id}!")
     return final_df, summary_id  # Return the final DataFrame
 
-
 def plot_delta_time_distance(dataframe, interval, summary_id):
     # Select all columns except "Group" for plotting (since they are dates)
     date_columns = [col for col in dataframe.columns if col != "Group"]
@@ -211,7 +229,7 @@ def plot_delta_time_distance(dataframe, interval, summary_id):
         dataframe.plot(x="Group", y=date_columns, marker="o")
 
         # Customize plot
-        plt.xlabel(f"Group (in {INTERVAL}-minute Time Intervals)")
+        plt.xlabel(f"Group (in {interval}-minute Time Intervals)")
         plt.ylabel("Distance Traveled")
         plt.title(f"Distance Traveled Over Time for {summary_id}")
         plt.legend(title="Date")
@@ -222,15 +240,17 @@ def plot_delta_time_distance(dataframe, interval, summary_id):
     else:
         print("No valid columns found for plotting!")
 
+def main():
+    # Call the function to open the file picker
+    file_path = open_file_picker()
 
+    # parse input text file
+    metadata_blocks, activity_dataframes, jump_dataframes = extract_metadata_and_data(file_path)
 
-# Path to your file
-file_path = 'sample.txt'
+    # Constants
+    INTERVAL = 5
+    grouped_df, SUMMARY_ID = delta_time_distance(activity_dataframes, INTERVAL, metadata_blocks)
+    plt = plot_delta_time_distance(grouped_df, INTERVAL, SUMMARY_ID)
 
-# parse input text file
-metadata_blocks, activity_dataframes, jump_dataframes = extract_metadata_and_data(file_path)
-
-# Constants
-INTERVAL = 5
-grouped_df, SUMMARY_ID = delta_time_distance(activity_dataframes, INTERVAL, metadata_blocks)
-plt = plot_delta_time_distance(grouped_df, INTERVAL, SUMMARY_ID)
+if __name__ == "__main__":
+    main()
