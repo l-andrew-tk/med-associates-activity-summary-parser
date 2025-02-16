@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
+import argparse
+import os
 
 def open_file_picker():
     # Initialize a hidden Tkinter root window
@@ -163,6 +165,21 @@ def print_summary(metadata, activity_df, jump_df):
         
         print("\n" + "="*40 + "\n")
 
+def export_data(data, id):
+    output_dir = "output"
+    output_filename = f"{output_dir}/{id}.csv"
+
+    # Create the directory if it does not exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Get absolute file path
+    absolute_path = os.path.abspath(output_filename)
+
+    # Save to CSV including metadata
+    data.to_csv(absolute_path, index=False)
+
+    print(f"CSV file saved successfully with name {absolute_path}!")
+
 
 ## Target output is a table for is x, y 
 # 1 file = 1 mouse
@@ -213,11 +230,8 @@ def delta_time_distance(dataframes, interval, metadata):
     # Reset index after merging
     final_df = final_df.reset_index()
 
-    output_filename = f"{summary_id}.csv"
-    # Save to CSV including metadata
-    final_df.to_csv(output_filename, index=False)
+    export_data(final_df, summary_id)
 
-    print(f"CSV file saved successfully with name {summary_id}!")
     return final_df, summary_id  # Return the final DataFrame
 
 def plot_delta_time_distance(dataframe, interval, summary_id):
@@ -241,16 +255,35 @@ def plot_delta_time_distance(dataframe, interval, summary_id):
         print("No valid columns found for plotting!")
 
 def main():
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description="Process data and optionally generate plots.")
+    parser.add_argument("--plot", action="store_true", help="Enable plotting")
+
+    # Parse arguments
+    args = parser.parse_args()
+
     # Call the function to open the file picker
     file_path = open_file_picker()
+
+    # Exit if no file provided
+    if not file_path:
+        print("Error: No file path provided. Please select a .Summary or .txt file to process.")
+        print("Usage: python script.py [--plot]")
+        sys.exit(1)  # Exit with error status 1
 
     # parse input text file
     metadata_blocks, activity_dataframes, jump_dataframes = extract_metadata_and_data(file_path)
 
     # Constants
     INTERVAL = 5
+    
+    # Save a new output csv file to specified directory
     grouped_df, SUMMARY_ID = delta_time_distance(activity_dataframes, INTERVAL, metadata_blocks)
-    plt = plot_delta_time_distance(grouped_df, INTERVAL, SUMMARY_ID)
+    
+    # Only generate plots if --plot is provided
+    if args.plot:
+        plt = plot_delta_time_distance(grouped_df, INTERVAL, SUMMARY_ID)
+
 
 if __name__ == "__main__":
     main()
